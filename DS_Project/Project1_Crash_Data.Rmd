@@ -1,0 +1,65 @@
+---
+title: "Montegomery County Crash Data"
+author: "Alexander Morales & Andrea Cano"
+date: "March 13th, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+
+This document visualizes crash data in the Montgomery County. It provides graphical evidence to answer multiple questions about safety or just simple curiosities when it comes to crashes.
+
+```{r}
+dat=read.csv(file = "Crash_report.csv")
+```
+
+## Where Data got collected and why ?
+
+This document explores the information provided on the crash reports in Montgomery County. This information is focused on the traffic collisions on local roadways collected by the Automated Crash Reporting System (ACRS) from the Maryland State Police.
+
+## Data exploration
+
+```{r}
+#imputing N/A data to UNKNOWN
+#plotting weather
+#dat$Weather[dat$Weather == "N/A"] = NA
+weather = dat$Weather
+weather = gsub("N/A","UNKNOWN", weather) 
+barplot(sort(table(weather)),horiz = TRUE, las=1,col = "lightblue", main = "Weather During Crash")
+
+#checking Seasons
+dat$dtime = strptime(as.character(dat$Crash.Date.Time),"%m/%d/%Y %I:%M:%S %p", tz ="EST")
+months = dat$dtime$mon +1
+months = month.abb[months]
+barplot(sort(table(months)), horiz = TRUE, las = 1, main = "Crashes per Month", col = "blue")
+
+#Plotting time of crashes 
+
+
+
+
+
+
+#plotting map
+library(ggmap)
+#separating lat and long from location
+coordinate = gsub("[()]","",dat$Location)
+coordinate = unique(sort(coordinate))
+map = get_map(coordinate,maptype = "road",zoom = 16)
+p = ggmap(map)
+```
+## Data cleaning and preprocessing
+```{r}
+
+
+```
+## Data exploration and visualization
+```{r}
+
+```
+## Conclusion
+"paragraph or so"
