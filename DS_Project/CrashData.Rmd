@@ -6,9 +6,11 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+***
 ## Introduction
 
 This document visualizes crash data in the Montgomery County. It provides graphical evidence to answer multiple questions about safety or just simple curiosities when it comes to crashes.
@@ -17,22 +19,160 @@ This document visualizes crash data in the Montgomery County. It provides graphi
 dat=read.csv(file = "Crash_report.csv")
 ```
 
+
+***
 ## Where Data got collected and why ?
 
 This document explores the information provided on the crash reports in Montgomery County. This information is focused on the traffic collisions on local roadways collected by the Automated Crash Reporting System (ACRS) from the Maryland State Police.
 
-## Data exploration
 ```{r}
+#plotting map
+library(ggmap)
+#separating lat and long from location
+coordinate = gsub("[()]","",dat$Location)
+coordinate = unique(sort(coordinate))
+map = get_map(coordinate[1], maptype = "satellite",zoom = 16)
+p = ggmap(map)
+p
+```
+
+  *Satellite View of the area explored in this markdown where the crashes occured.*
+
+***
+## Initial Data Exploration
+```{r results='hide'}
+summary(dat)
+str(dat)
+```
+While first encountering this data we noticed multiple missing values and were curious as to why that was and if it was a large part of the data. Once those were taken care of, we started noticing interesting trends of the crashes within this route.
+*How does the weather effect crashing?*
+*Is there a specific time of year where the crashes are more prominent?*
+*How about a specific time of day? (Rush hour?)*
+*Is substance abuse a factor?*
+
+***
+## Data exploration and Visualization
+
+***
+
+### Does Weather Influence the Amount of Crashes?
+```{r}
+#imputing N/A data to UNKNOWN
+#plotting weather
+#dat$Weather[dat$Weather == "N/A"] = NA
+par(mar = c(3,11,3,3))
+weather = dat$Weather
+weather = gsub("N/A","UNKNOWN", weather) 
+barplot(sort(table(weather)),horiz = TRUE, las=1,col = "lightblue", main = "Weather During Crash", cex.names = .75, cex.axis = .75)
+``` 
+
+*Analysis:*
+
+As seen in the graph, extreme weather does not have as much of an influence as expected. Most crashes occur when the weather is clear meaning that weather is not a likely cause for these crashes. Although, the amount of Unknowns in the data could change our assumption on if weather is an issue. 
+
+***
+### Is there a Month when Crashes are more Prominent?
+```{r}
+#checking Months
+dat$dtime = strptime(as.character(dat$Crash.Date.Time),"%m/%d/%Y %I:%M:%S %p", tz ="EST")
+months = dat$dtime$mon +1
+months = month.abb[months]
+barplot(sort(table(months)), horiz = TRUE, las = 1, main = "Crashes per Month", col = "blue")
+```
+
+*Analysis:*
+
+The bar-plot above shows the number of crashes per month. Surprisingly, there are no significant differences between the months, they are all relatively large numbers. Although January,as an exception, does exceed the other months by a couple thousand. 
+
+
+***
+### Is Substance Abuse a Factor?
+```{r}
+substance=dat$Driver.Substance.Abuse
+substance = gsub("N/A","UNKNOWN", substance) 
+par(mar=c(3,12,3,3))
+barplot(sort(table(substance)),horiz = TRUE,las=1,col = "orange", main = "Substance use",cex.names = .75,cex.axis = .75)
+```
+
+*Analysis:*
+
+The data collected from Montgomery county had some "N/A" values for substance use.However; we were curious to see how many people were under the influence while conducting the vehicle in the county. We were astonished once we imputed all the "N/A" values in the data to "UNKNOWN" that majority of the accidents the driver was not under the influence. Also, that there was vast amount of "UNKNOWN", that could lead us to assume that the Police Department was not checking a large quantity of drivers if they were impaired with any alcohol or drugs.
+
+***
+### Is Speeding a Factor?
+```{r}
+par(mar=c(3,12,3,3))
+barplot(sort(table(dat$Vehicle.Movement)),horiz = TRUE,las=1,col = "green", main = "Vehicle Movement",cex.names = .75,cex.axis = .75)
+```
+
+*Analysis:*
+
+The graph above shows the analysis of the movement of the vehicles that was a factor for their car accident. We can conclude that a vast amount of accidents occurred while the vehicle was moving at a constant speed. However; if the most of the accidents are caused by constant speed then we could assume that the satellite image of the road with the most accidents is caused by speed.  
+
+***
+###Are the Crashes due to Traffic Control?
+```{r}
+t.control=dat$Traffic.Control
+t.control = gsub("N/A","UNKNOWN",t.control) 
+par(mar=c(3,12,3,3))
+barplot(sort(table(t.control)),horiz = TRUE,las=1,col = "red", main = "Traffic Control",cex.names = .75,cex.axis = .75)
+```
+
+*Analysis:*
+
+The bar-plot above shows the traffic control in the regions where all the accidents occurred. It is highly noticeable that most accidents occur when there isn't traffic control on the roads, according to the bar-plot. Also, most of the accidents occur on the road shown on the satellite image above. Therefore, we can safely assume that the road needs traffic control in order to lower the rate of accidents on that road.
+
+
+***
+### Is Rush Hour a Factor? 
+
+```{r}
+dat$dtime = strptime(as.character(dat$Crash.Date.Time),"%m/%d/%Y %I:%M:%S %p", tz ="EST")
+par(mar=c(4,5,2,1))
+hours = dat$dtime$hour + 1
+tab = as.data.frame(table(hours))
+
+plot(table(hours), las = 1, main = "Time during crash", col = "blue",type = "l",xlab = "Hour(24 Hour Time)", ylab = "Crashes")
+dtab = as.data.frame(table(hours))
+maH = names(which.max(table(hours)))
+max.line = as.numeric(maH)
+abline(v = max.line, col = "red")
+miH = names(which.min(table(hours)))
+min.line = as.numeric(miH)
+abline(v = min.line, col = "green")
+
+legend("bottomright", legend=c("Min", "Max"),
+       col=c("green", "red"), lty=1:1, cex=0.8)
+
 
 ```
-## Data cleaning and preprocessing
-```{r}
 
+*Analysis:*
 
+According to this line plot, 'rush hour' is between 5-18 in 24-hour time (5am to 6pm). At this time most crashes will occur at 18(6pm) and the least likely time for a crash to occur is at 5(5am). So driving in the evening has a higher probability to have an accident.  
+
+***
+## Data Cleaning and Preprocessing
+
+*Examples:*
+
+```{r results='hide'}
+substance=dat$Driver.Substance.Abuse
+substance = gsub("N/A","UNKNOWN", substance)
+
+dat$dtime = strptime(as.character(dat$Crash.Date.Time),"%m/%d/%Y %I:%M:%S %p", tz ="EST")
+par(mar=c(4,5,2,1))
+hours = dat$dtime$hour + 1
+tab = as.data.frame(table(hours))
 ```
-## Data exploration and visualization
-```{r}
+*Explanation:*
 
-```
+Throughout the exploration, there were multiple encounters with missing or incomplete data. to work around these issues, and prevent from data getting lost, we 'imputed' the data to Unknown values rather than NA. As well as, preprocessing data such as with the time of crashes to where it can be separated and used to answer the proposed questions.
+
+***
 ## Conclusion
-"paragraph or so"
+
+To conclude our data exploration of the crash data of Montgomery county in Maryland. After cleaning several factors that came into mind for the high volume of accidents in the county. We could safely assume that the majority of the accidents are caused by speeding, and the drivers in that region are not under the influence in most cases. We took into consideration the traffic control, and we concluded with a graph that most accidents occurred when traffic controls are not present. Therefore, in order to lower the accident rate in some of the roads in Montgomery county some traffic control will need to be in-placed in order to keep drivers from speeding through lonely roads. 
+
+
+
